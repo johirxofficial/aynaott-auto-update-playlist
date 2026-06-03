@@ -1,4 +1,4 @@
-name: Auto Update M3U and JSON
+name: Auto Update AynaOTT Playlist
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  update-list:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,18 +30,22 @@ jobs:
         sudo apt-get install -y unzip
         unzip -P "$ZIP_PASS" main.py.zip
 
-    - name: Run Script
-      env:
-        AYNA_AUTH_API: ${{ secrets.AYNA_AUTH_API }}
+    - name: Execute Script
       run: python main.py
 
-    - name: Cleanup extracted files
+    - name: Secure Cleanup
       run: rm -f main.py
 
-    - name: Commit and Push changes
+    - name: Commit and Push Generated Files
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add AynaOTT.m3u AynaOTT.json
-        git diff-index --quiet HEAD || git commit -m "Auto Updated List: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
-        git push
+        
+        if [ -f AynaOTT.m3u ] && [ -f AynaOTT.json ]; then
+          git add AynaOTT.m3u AynaOTT.json
+          git diff-index --quiet HEAD || git commit -m "Auto Updated Playlist: $(date -u +'%Y-%m-%d %H:%M:%S') UTC"
+          git push
+        else
+          echo "Error: Output files missing. Script failed to fetch data."
+          exit 1
+        fi
